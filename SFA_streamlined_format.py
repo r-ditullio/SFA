@@ -4,10 +4,8 @@ Since other files from git are designed to be run via j-notebooks or such and
 do not work locally as py files simply pulling code from git notebook to make 
 local py file that works
 
-Note to self: stupidly deleted local copy with all your comments from talking 
-with Chetan about what each part did.  Try to replicate these comments on
-this new code/add more to make sure we have full knowlwedge of how this
-functions.  Upshot, remember most of what was said.
+Update 2019-08-05: Commenting through some lines just for sake of my own memory
+
 """
 
 
@@ -25,41 +23,43 @@ import SFA_Tools.SFA_Sets as s
 from SFA_Tools.SFA_Func import *
 
 ## Files for vocalizations and noise
-load_noise = False
-noiselen = 100000
-# noise = np.random.randn(noiselen)
-noise = None
+load_noise = False #toggle whether noises is generated or pulled in from a pre-generated file
+noiselen = 100000 #if loading in a pre-generated file, only take this many samples
+# noise = np.random.randn(noiselen) #old way of generating noise
+noise = None #toggle for whether testing with noise or not
 
-vocal_files = ['basic.wav', 'altered.wav']
-noise_file = 'Matlab_SoundTextureSynth/Output_Folder/Bubbling_water_10111010100.wav'
-num_vocals = len(vocal_files)
+vocal_files = ['basic.wav', 'altered.wav'] #set names of files to be played/trained and tested on
+noise_file = 'Matlab_SoundTextureSynth/Output_Folder/Bubbling_water_10111010100.wav' #file to load for nosie
+num_vocals = len(vocal_files) #for use later, get number of unique stimulus files loaded
 
 ## Parameters for vocalization and noise preprocessing
-signal_to_noise_ratio = 50
-gfb = g.GammatoneFilterbank(order=1, density = 1.0, startband = -21, endband = 21, normfreq = 2200)
-plot_gammatone_transformed = True
-plot_temporal_filters = False
-plot_temporal_transformed = True
-down_sample = True
-down_sample_pre = 10
-down_sample_post = 10
+signal_to_noise_ratio = 50 #unclear if scales on moment by moment amplitude or by power (i.e. intergrated energy across frequencies)
+gfb = g.GammatoneFilterbank(order=1, density = 1.0, startband = -21, endband = 21, normfreq = 2200) #sets up parameters for our gammatone filter model of the cochlea.
+                            #Need to look at documentation to figure out exactly how these parameters work , but normfreq at least seems to be central frequency from
+                            #which the rest of the fitler a distributed (accoruding to startband and endband)
+plot_gammatone_transformed = True #toggle to plot output of gammatone filtered stimulus
+plot_temporal_filters = False #toggle to plot temporal filters (i.e. temporal component of STRF)
+plot_temporal_transformed = True #toggle to plot signal after being gammatone filtered and temporally filtered 
+down_sample = True #down sample stimulus to help with RAM issues and general dimensionality issues.  I believe mostly reduces resolution of frequency
+down_sample_pre = 10 #Factor by which to reduce Fs by (e.g. 10 reduces Fs by one order of magnitude)
+down_sample_post = 10 #Factor by which to reduce Fs after applying filters
 
 ## Parameters for training data
-num_samples = num_vocals * 1
-gaps = True
-min_gap = 25
-max_gap = 100
-apply_noise = False
+num_samples = num_vocals * 1 #choose how many times you see each stimulus
+gaps = True #toggle whether there can be gaps between presentation of each stimulus
+min_gap = 25 #sets min range of gap in units of samples (?)
+max_gap = 100 #set max range of gap in units of samples (?)
+apply_noise = False #toggle for applying noise
 
 ## Parameters for testing data
-test_noise = False
-plot_test = True
-plot_features = True
+test_noise = False #unclear, I guess toggle for adding unique noise in test case that is different from training case?
+plot_test = True #plotting toggle for ?
+plot_features = True #plotting toggle for filters found by SFA
 
-classifier_baseline = Perceptron(max_iter = 10000, tol = 0.001)
+classifier_baseline = Perceptron(max_iter = 10000, tol = 0.001) #from scikit (presumably) #set up Perceptron classifier
 classifier_SFA = Perceptron(max_iter = 10000, tol = 0.001)
-classifier_features = 2
-baseline_features = 'all'
+classifier_features = 2 #how many features from SFA  SFA-Perceptron gets to use
+baseline_features = 'all' #how many features the Perceptron by itself gets to use
 
 ## Load in files
 
@@ -94,7 +94,7 @@ if noise is not None:
     
 if down_sample:
     for i,vocal in enumerate(vocals_transformed):
-        vocals_transformed[i] = vocal[:,::down_sample_pre]
+        vocals_transformed[i] = vocal[:,::down_sample_pre] #down samples by factor set in above code (e.g. 10 means reduce fs by one order of magnitude)
 
 if(plot_gammatone_transformed):
     for i,vocal in enumerate(vocals_transformed):
@@ -107,7 +107,7 @@ print('Ready For Temporal Filters')
 ## Apply temporal filters
 
 tFilter = temporalFilter()
-tFilter2 = np.repeat(tFilter,3)/3
+tFilter2 = np.repeat(tFilter,3)/3 #slightly unlear what is going on here
 tFilters = [tFilter, tFilter2]
 
 if(plot_temporal_filters):
@@ -126,7 +126,7 @@ if noise is not None:
     
 if down_sample:
     for i,vocal in enumerate(vocals_temporal_transformed):
-        vocals_temporal_transformed[i] = vocal[:,::down_sample_post]
+        vocals_temporal_transformed[i] = vocal[:,::down_sample_post] #I guess this does a separate down sample after the temporal filters have been applied?
     if noise is not None:
         noise_temporal_transformed = noise_temporal_transformed[:,::down_sample_post]
         
