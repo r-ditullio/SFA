@@ -9,13 +9,17 @@ from tqdm import tqdm
 
 import SFA_Tools.SFA_Sets as s
 
+
+
 # Read and load vocalizations from a list of files
 def get_data(file_list):
-    vocalizations = []
+    vocalizations = [] #treating vocalizations as a list
     rate = 0
     for f in file_list:
-        vocal, rate = sf.read(f)
-        vocalizations.append(vocal)
+        vocal, rate = sf.read(f) 
+        #note sf reads assuming that there is NOT a leading /
+        #rate is the original sampling rate that sf.read pull from the file
+        vocalizations.append(vocal) 
     return vocalizations
 
 # Compute the average power of a signal
@@ -33,10 +37,13 @@ def scale_noise(vocalizations, noise, ratio):
     return noise * np.sqrt(initial_ratio/ratio)
 
 # Applies a gammatone transform with a given filter bank to a waveform
-def gamma_transform(data, gfb):
+def gamma_transform(data, gfb): #this is based on a somewhat poorly documented pyfilterbank code
+    #http://siggigue.github.io/pyfilterbank/gammatone.html
+    #data is vocalizations list 
     analysed = gfb.analyze(data)
     
     transformed = np.zeros((len(gfb.centerfrequencies),data.size))
+    #gfb.centerfrequencies returns the center frequencies of each band in the gfb object in hz
     for i in range(len(gfb.centerfrequencies)):
         (band,state) = analysed.__next__()
         transformed[i] = abs(band)
@@ -48,7 +55,7 @@ def gamma_transform(data, gfb):
 def gamma_transform_list(data, filterbank):
     transformed = []
     
-    for d in tqdm(data):
+    for d in tqdm(data): # note tqdm is just something to generate a progress bar
         d_transformed = gamma_transform(d, filterbank)
         transformed.append(d_transformed)
         
@@ -58,13 +65,14 @@ def gamma_transform_list(data, filterbank):
 def plot_input(inp, name):
     plt.figure(figsize=(12,3))
     plt.title(name)
-    plt.imshow(inp, aspect = 'auto')
+    plt.imshow(inp, aspect = 'auto', origin = 'lower')
     plt.show()
     return
 
 # Gamma Function
 def gamma(n, a, b, m):
     arr = np.arange(1,n+1)
+    #unclear why this^ doesn't start at zero...trying that change...this seems to tank performance
     return a*np.power(arr,m)*(np.exp(-b*arr))
 
 # Creates a temporal filter
@@ -131,7 +139,7 @@ def testSF(data, name, mean, variance, SS, weights, mode = 'quad'):
     data_Sphered = s.PCATest(data_normalized,SS)
     print(name, ': Sphering Complete...')
     
-    return weights @ data_Sphered
+    return weights @ data_Sphered #this is a post python 3.5 short hand for matrix multiplication
 
 # Get Labels For Data
 def getlabels(data):
